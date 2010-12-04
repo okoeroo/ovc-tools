@@ -17,6 +17,7 @@
 # (c)2010 by Willem van Engen <dev-rfid@willem.engen.nl>
 #
 import sys
+import struct
 
 from ovc import *
 from ovc.util import mfclassic_getsector
@@ -36,6 +37,34 @@ if __name__ == '__main__':
 		if len(data) == 4096:	# mifare classic 4k
 			# TODO card id, expdate, birthdate, etc.
 			# transactions
+			sdata = mfclassic_getsector(data, 0)
+
+			#card ID (first 4 bytes)
+			id = 0
+			for i in range(0, 4):
+				id = id * 256
+				id = id + ord(sdata[i])
+			print "Kaard id: " + str(id)
+
+			#expiration date
+			tmp = 0
+			for i in range(27, 30):
+				tmp = tmp * 256
+				tmp = tmp + ord(sdata[i])
+			date = datetime.date(1997, 1, 1)
+			date += datetime.timedelta(tmp >> 4)
+			print "Verloop datum kaart: " + str(date)
+
+			#birthday
+			t = 0
+			sdata = mfclassic_getsector(data, 22)
+			year  = (ord(sdata[14]) / 16) * 10 + ord(sdata[14]) % 16
+			year  = year * 100 + (ord(sdata[15]) / 16) * 10 + ord(sdata[15]) % 16
+			month = (ord(sdata[16]) / 16) * 10 + ord(sdata[16]) % 16
+			day   = (ord(sdata[17]) / 16) * 10 + ord(sdata[17]) % 16
+			date = datetime.date(year, month, day)
+			print "Geboortedatum: " + str(date)
+
 			for sector in range(32, 35):
 				sdata = mfclassic_getsector(data, sector)[:-0x10]
 				for chunk in range(0, len(sdata), 0x30):
